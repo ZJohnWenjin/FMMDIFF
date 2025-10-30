@@ -1,5 +1,6 @@
 # FMMDIFF
-FMM-Diff: A Feature Mapping and Merging Diffusion Model for MRI Generation with Missing Modality
+FMM-Diff: A Feature Mapping and Merging Diffusion Model for MRI Generation with Missing Modality.
+
 Still on Updating!!! But FMM module had been updated. You can use Mapping encoder to do what you want.
 
 ## 🔧 Configuration
