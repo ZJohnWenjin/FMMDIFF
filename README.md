@@ -4,7 +4,7 @@ Still on Updating!!! But FMM module had been updated. You can use Mapping encode
 
 ## 🔧 Configuration
 
-Modify the configuration file at [`configs/myconfig.yaml`](config.yml) to customize your MRI inputs.
+Modify the configuration file at (config.yml) to customize your MRI inputs.
 
 ```yaml
 
