@@ -66,9 +66,10 @@ def build_loader_for_FMM(data_path,m_list):
     nii_files = get_all_nii_paths(data_path,m_list)
 
 
-    dataset = NiiDataset(nii_files[:200])
+    dataset = NiiDataset(nii_files)
 
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=12,
                             pin_memory=True, drop_last=False)
+
 
     return dataloader
