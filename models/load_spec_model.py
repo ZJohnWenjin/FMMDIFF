@@ -3,21 +3,35 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class Down(nn.Module):
-    def __init__(self, in_channels, out_channels):
+class DoubleConv(nn.Module):
+    def __init__(self, in_channels, out_channels, mid_channels=None, kernel_size=3, padding=1):
         super().__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 3, 1, 1),
-            nn.InstanceNorm2d(out_channels),
-            nn.SiLU(),
-            nn.Conv2d(out_channels, out_channels, 3, 2, 1), 
-            nn.InstanceNorm2d(out_channels),
-            nn.SiLU(),
+        if not mid_channels:
+            mid_channels = out_channels
+        self.double_conv = nn.Sequential(
+            nn.Conv2d(in_channels, mid_channels, kernel_size=kernel_size, padding=padding, bias=False),
+            torch.nn.GroupNorm(num_groups=32, num_channels=mid_channels, eps=1e-6, affine=True),
+            nn.SiLU()
         )
 
     def forward(self, x):
-        return self.conv(x)
+        return self.double_conv(x)
 
+
+class Down(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.conv = torch.nn.Conv2d(in_channels,
+                                    out_channels,
+                                    kernel_size=3,
+                                    stride=2,
+                                    padding=0)
+
+    def forward(self, x):
+        pad = (0, 1, 0, 1)
+        x = torch.nn.functional.pad(x, pad, mode="constant", value=0)
+        x = self.conv(x)
+        return x
 
 def Normalize(in_channels):
     return nn.BatchNorm2d(in_channels)
@@ -59,24 +73,30 @@ class Encoder(nn.Module):
         super().__init__()
         assert num_down >= 1, "num_down must be >= 1"
 
-
-        chs = [base_ch * (2 ** i) for i in range(num_down)]
+        self.deconv = DoubleConv(in_channels,64)
+        
+        chs = [base_ch * (2 ** i) for i in range(0,num_down)]
+        chs = [chs[i] if i < 2 else chs[i-1] for i in range(len(chs))]
         self.out_channels_per_level = chs 
+        
 
-        blocks = []
-        for i in range(num_down):
-            in_ch = in_channels if i == 0 else chs[i - 1]
-            out_ch = chs[i]
-            blocks.append(nn.Sequential(
-                Down(in_ch, out_ch),
-                ResidualBlock(out_ch),
-            ))
-        self.blocks = nn.ModuleList(blocks)
+        self.blocks = nn.ModuleList()
+        self.res_blocks = nn.ModuleList()
+        
+        for i in range(num_down-1):
+            in_ch = chs[i]
+            out_ch = chs[i+1]
+            self.blocks.append(Down(in_ch, out_ch))
+            self.res_blocks.append(ResidualBlock(out_ch))
 
+            
     def forward(self, x):
         feats = []
-        for blk in self.blocks:
-            x = blk(x)
+        x = self.deconv(x)
+        feats.append(x)   
+        for i in range(len(self.blocks)):
+            x = self.blocks[i](x)
+            x = self.res_blocks[i](x)              
             feats.append(x) 
         return feats  
 
@@ -89,26 +109,25 @@ class Decoder(nn.Module):
         self.num_down = len(chs)
 
         up_blocks = []
+        
+        self.up_blocks = nn.ModuleList()
+        self.res_blocks = nn.ModuleList()
 
         for i in range(self.num_down - 1, 0, -1):
-            up_blocks.append(nn.Sequential(
-                Upsample(in_channels=chs[i], out_channels=chs[i - 1]),
-                ResidualBlock(chs[i - 1]),
-            ))
-        self.up_blocks = nn.ModuleList(up_blocks)
+            self.up_blocks.append(Upsample(in_channels=chs[i], out_channels=chs[i - 1]))
+            self.res_blocks.append(ResidualBlock(chs[i - 1]))
 
-        self.final_upsample = Upsample(in_channels=chs[0], out_channels=out_channels)
+        self.final_upsample = nn.Conv2d(in_channels=chs[0], out_channels=out_channels, kernel_size=1)
         self.out_activation = nn.Sigmoid()
 
     def forward(self, feats):
-        """
-        feats: 来自 Encoder 的特征列表 [x1, x2, ..., xN]
-        """
+
         assert isinstance(feats, (list, tuple)) and len(feats) == self.num_down
         y = feats[-1] 
 
         for k, i in enumerate(range(self.num_down - 1, 0, -1)):
             y = self.up_blocks[k](y)
+            y = self.res_blocks[k](y)
             y = y + feats[i - 1]  
 
         y = self.final_upsample(y)  
