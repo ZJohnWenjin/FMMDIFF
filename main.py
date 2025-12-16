@@ -9,6 +9,7 @@ import torch
 import numpy as np
 
 from models.FMM_pretrain import FMM_Pretrain
+from runners.diffusion import Diffusion
 
 torch.set_printoptions(sci_mode=False)
 
@@ -19,6 +20,13 @@ def parse_args_and_config():
     parser.add_argument(
         "--config", type=str, default='config.yml', help="Path to the config file"
     )
+    parser.add_argument(
+        "--log_path",
+        type=str,
+        default="log",
+        action="store",
+    )
+    # encoders
     parser.add_argument(
         "--train_specific_en_decoder",
         default=True,
@@ -31,12 +39,21 @@ def parse_args_and_config():
         action="store",
         help="Whether to train mapping encoder",
     )
+
+    # diffusion
     parser.add_argument(
-        "--log_path",
-        type=str,
-        default="log",
-        action="store",
+        "--timesteps", type=int, default=1000, help="number of steps involved"
     )
+    parser.add_argument(
+        "--resume_training", type=int, default=False, help="Resume training the diffusion model"
+    )
+    parser.add_argument(
+        "--sample",
+        default=False,
+        action="store",
+        help="Whether to produce samples from the model",
+    )
+    
     args = parser.parse_args()
 
     # parse config file
@@ -88,7 +105,6 @@ def dict2namespace(config):
     elif isinstance(config, list):
         return [dict2namespace(v) for v in config]
     else:
-        # 标量类型（str/int/float/bool/None）原样返回
         return config
 
 def main():
@@ -104,6 +120,11 @@ def main():
         if args.train_mapping_encoder:
             FMM_P.pretrain(specific_encoder=False)
 
+    runner = Diffusion(args, config)
+    if args.sample:
+        runner.sample()
+    else:
+        runner.train()
 
     return 0
 
