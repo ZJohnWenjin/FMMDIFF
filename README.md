@@ -11,7 +11,6 @@ mri:
   # MRI sequences as input
   modalities_name: ['Flair.nii.gz','T1.nii.gz','T1c.nii.gz','T2.nii.gz' ]
   # number of modality
-  modalities_num: 4
 
 folder_path:
   data_store_path: "PATH/TO/DATA"
