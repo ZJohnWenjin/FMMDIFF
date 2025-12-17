@@ -146,24 +146,24 @@ class Diffusion(object):
                     if stop >= len(m_target):
                         stop = len(m_target)
 
-                    x = m_target[start:stop]
-                    y = m_list[start:stop]
+                    m_target_mini = m_target[start:stop]
+                    m_list_mini = m_list[start:stop]
 
-                    n = x.size(0)
+                    n = m_target_mini.size(0)
                     data_time += time.time() - data_start
 
                     step += 1
-                    x = x.to(self.device).float()
-                    y = y.to(self.device).float()
+                    m_target_mini = m_target_mini.to(self.device).float()
+                    m_list_mini = m_list_mini.to(self.device).float()
 
-                    e = torch.randn_like(x)
+                    e = torch.randn_like(m_target_mini)
                     b = self.betas
 
-                    y = random_zero_along_dim(y)
+                    m_list_mini = random_zero_along_dim(m_list_mini)
 
-                    t, weights = self.schedule_sampler.sample(x.shape[0], self.device)
+                    t, weights = self.schedule_sampler.sample(m_target_mini.shape[0], self.device)
 
-                    loss = noise_estimation_loss(model, x, t, e, b, y)
+                    loss = noise_estimation_loss(model, m_target_mini, t, e, b, m_list_mini)
 
                     if isinstance(self.schedule_sampler, LossAwareSampler):
                         self.schedule_sampler.update_with_local_losses(
@@ -300,3 +300,4 @@ class Diffusion(object):
 
     def test(self):
         pass
+
