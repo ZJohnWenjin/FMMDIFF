@@ -215,8 +215,8 @@ class Diffusion(object):
             epoch += 1
 
     def sample(self):
-        train_loader = build_loader_for_Diff(self.config.data.data_store_path, self.config.data.modalities_name,
-                                             self.config.data.modalities_target)
+        test_loader = build_loader_for_Diff(self.config.data.data_store_path, self.config.data.modalities_name,
+                                             self.config.data.modalities_target, False)
 
         model = Model(self.config).to(self.device)
         ckp_pth = os.path.join(self.config.train.ckp_point_path, "diff")
@@ -241,7 +241,7 @@ class Diffusion(object):
             p.requires_grad = False
         model.eval()
 
-        self.sample_sequence(model, train_loader)
+        self.sample_sequence(model, test_loader)
 
     def sample_sequence(self, model, test_loader):
 
@@ -300,4 +300,5 @@ class Diffusion(object):
 
     def test(self):
         pass
+
 
