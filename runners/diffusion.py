@@ -282,7 +282,7 @@ class Diffusion(object):
                     x = self.sample_image(x, model, condition_mini, last=True)
                     x = x.to(self.device)
                     x = (x * 255.0).clamp(0, 255).to(torch.uint8)
-                    x = x.permute(0, 2, 3, 1).contiguous().cpu().numpy()
+                    images = x.permute(0, 2, 3, 1).contiguous().cpu().numpy()
 
                     for mini_index in range(len(images)):
                         cv2.imwrite(os.path.join(ckp_pth, str(image_index) + '.png'), images[mini_index])
@@ -300,5 +300,6 @@ class Diffusion(object):
 
     def test(self):
         pass
+
 
 
