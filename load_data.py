@@ -137,18 +137,29 @@ class NiiDataset_Diff(Dataset):
         return tensor_nii.permute(1,0,2,3) # shape: (1, Z, W, H)
 
 
-def build_loader_for_FMM(data_path,m_list):
+def build_loader_for_FMM(data_path,m_list,train=True):
     nii_files = get_all_nii_paths_FMM(data_path,m_list)
+    nii_len = int(len(nii_files)*0.8)
+    if train:
+        nii_files = nii_files[:nii_len]
+    else:
+        nii_files = nii_files[nii_len:]
     dataset = NiiDataset_FMM(nii_files)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=12,
                             pin_memory=True, drop_last=False)
 
     return dataloader
 
-def build_loader_for_Diff(data_path,m_list,m_target):
+def build_loader_for_Diff(data_path,m_list,m_target,train=True):
     nii_files = get_all_nii_paths_Diff(data_path,m_list,m_target)
+    nii_len = int(len(nii_files)*0.8)
+    if train:
+        nii_files = nii_files[:nii_len]
+    else:
+        nii_files = nii_files[nii_len:]
     dataset = NiiDataset_Diff(nii_files)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=12,
                             pin_memory=True, drop_last=False)
     return dataloader
+
 
