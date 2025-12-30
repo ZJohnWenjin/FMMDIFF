@@ -218,7 +218,7 @@ class Diffusion(object):
         test_loader = build_loader_for_Diff(self.config.data.data_store_path, self.config.data.modalities_name,
                                              self.config.data.modalities_target, False)
 
-        model = Model(self.config).to(self.device)
+        model = FMM_Diff(config).to(self.device)
         ckp_pth = os.path.join(self.config.train.ckp_point_path, "diff")
 
         logging.info('loading parameters...')
@@ -300,6 +300,7 @@ class Diffusion(object):
 
     def test(self):
         pass
+
 
 
 
